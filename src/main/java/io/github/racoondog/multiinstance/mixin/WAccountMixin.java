@@ -1,6 +1,6 @@
-package com.example.addon.mixin;
+package io.github.racoondog.multiinstance.mixin;
 
-import com.example.addon.MultiInstanceScreen;
+import io.github.racoondog.multiinstance.MultiInstanceScreen;
 import meteordevelopment.meteorclient.gui.widgets.WAccount;
 import meteordevelopment.meteorclient.gui.widgets.containers.WHorizontalList;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;

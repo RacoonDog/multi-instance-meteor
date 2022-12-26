@@ -1,6 +1,6 @@
-package com.example.addon;
+package io.github.racoondog.multiinstance;
 
-import com.example.addon.mixin.IMicrosoftAccount;
+import io.github.racoondog.multiinstance.mixin.IMicrosoftAccount;
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import meteordevelopment.meteorclient.gui.WindowScreen;
 import meteordevelopment.meteorclient.gui.screens.AccountsScreen;
@@ -90,16 +90,16 @@ public class MultiInstanceScreen extends WindowScreen {
                     args.add(FabricLoader.getInstance().isDevelopmentEnvironment() ? "net.fabricmc.devlaunchinjector.Main" : KnotClient.class.getName());
                     args.addAll(Arrays.asList(launchArgs));
 
-                    Addon.LOG.info("Starting new instance...");
-                    Addon.LOG.info("JRE/JDK: " + jre.get());
-                    Addon.LOG.info("JVM Options: " + String.join(" ", newJvmOpts));
+                    MultiInstance.LOG.info("Starting new instance...");
+                    MultiInstance.LOG.info("JRE/JDK: " + jre.get());
+                    MultiInstance.LOG.info("JVM Options: " + String.join(" ", newJvmOpts));
 
                     Process p = pb.start();
 
-                    Addon.LOG.info("Instance started with PID {}.", p.pid());
+                    MultiInstance.LOG.info("Instance started with PID {}.", p.pid());
                 } catch (IOException e) {
                     info.set("Could not start instance...");
-                    Addon.LOG.info("Could not start instance...");
+                    MultiInstance.LOG.info("Could not start instance...");
                     e.printStackTrace();
                 }
 

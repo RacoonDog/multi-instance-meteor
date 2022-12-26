@@ -1,4 +1,4 @@
-package com.example.addon.mixin;
+package io.github.racoondog.multiinstance.mixin;
 
 import meteordevelopment.meteorclient.systems.accounts.types.MicrosoftAccount;
 import net.fabricmc.api.EnvType;
