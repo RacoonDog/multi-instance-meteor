@@ -5,7 +5,7 @@
   "name": "Addon Template",
   "description": "An addon template for the Meteor addons.",
   "authors": [
-    "seasnail"
+    "Crosby"
   ],
   "contact": {
     "repo": "https://github.com/MeteorDevelopment/meteor-addon-template"
