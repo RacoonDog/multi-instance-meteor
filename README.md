@@ -1,8 +1,10 @@
-# Meteor Addon Template
+<div align="center">
+  <h1>Multi Instance Meteor</h1>
+  <p>Easily launch new instances of Minecraft in a quick and configurable way.</p>
+</div>
 
-A template to allow easy usage of the Meteor Addon API.
-
-### How to use:  
-- Clone this project
-- Use this template to create new modules/commands
-- Run the mod with Meteor.
+Features:
+- Account Authentication
+- Configurable JRE/JDK
+- Modify Min/Max RAM
+- Append JVM Options

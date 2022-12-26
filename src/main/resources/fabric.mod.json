@@ -7,6 +7,9 @@
   "authors": [
     "Crosby"
   ],
+  "contributors": [
+    "Una :prayge:"
+  ],
   "contact": {
     "repo": "https://github.com/RacoonDog/multi-instance-meteor",
     "sources": "https://github.com/RacoonDog/multi-instance-meteor",
