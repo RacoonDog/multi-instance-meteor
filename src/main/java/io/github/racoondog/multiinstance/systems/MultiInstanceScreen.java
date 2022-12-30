@@ -1,8 +1,8 @@
-package io.github.racoondog.multiinstance;
+package io.github.racoondog.multiinstance.systems;
 
-import io.github.racoondog.meteorsharedaddonutils.mixin.mixin.IMicrosoftAccount;
 import io.github.racoondog.meteorsharedaddonutils.mixin.mixin.ISwarm;
 import io.github.racoondog.multiinstance.utils.ArgsUtils;
+import io.github.racoondog.multiinstance.utils.InstanceBuilder;
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import meteordevelopment.meteorclient.gui.WindowScreen;
 import meteordevelopment.meteorclient.gui.screens.AccountsScreen;
@@ -17,17 +17,11 @@ import meteordevelopment.meteorclient.gui.widgets.input.WTextBox;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WCheckbox;
 import meteordevelopment.meteorclient.systems.accounts.Account;
-import meteordevelopment.meteorclient.systems.accounts.types.MicrosoftAccount;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.misc.swarm.Swarm;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
 import meteordevelopment.meteorclient.utils.render.color.Color;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.impl.launch.knot.KnotClient;
 
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,9 +32,9 @@ import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class MultiInstanceScreen extends WindowScreen {
     private static final CharFilter NUMBER_FILTER = (text, c) -> '0' <= c && c <= '9';
     private static final CharFilter MEMORY_FILTER = (text, c) -> ('0' <= c && c <= '9') || c == 'k' || c == 'K' || c == 'm' || c == 'M' || c == 'g' || c == 'G';
-    private static final List<String> JVM_OPTS = ManagementFactory.getRuntimeMXBean().getInputArguments();
 
     private final Account<?> account;
+    private final InstanceBuilder builder;
 
     private WTextBox jre;
     private WTextBox xms;
@@ -61,6 +55,7 @@ public class MultiInstanceScreen extends WindowScreen {
         super(theme, "Multi Instance");
 
         this.account = account;
+        this.builder = new InstanceBuilder(account);
     }
 
     @Override
@@ -75,7 +70,7 @@ public class MultiInstanceScreen extends WindowScreen {
 
         table.add(theme.verticalSeparator()).expandWidgetY();
         WVerticalList right = table.add(theme.verticalList()).expandX().widget();
-        jre = option(right, "JDK/JRE Location", getJre());
+        jre = option(right, "JDK/JRE Location", builder.jre);
         table.row();
 
         WHorizontalList memConfig = right.add(theme.horizontalList()).expandX().widget();
@@ -123,13 +118,24 @@ public class MultiInstanceScreen extends WindowScreen {
         locked = true;
 
         MeteorExecutor.execute(() -> {
-            try {
-                launch();
-            } catch (IOException e) {
-                info.set("Could not start instance...");
-                MultiInstance.LOG.info("Could not start instance...");
-                e.printStackTrace();
+            builder.jre = jre.get();
+
+            //Setup launch args
+            builder.launchArgs.addAll(List.of(launchArgs.get().split(" ")));
+            builder.modifyArg("--width", width.get());
+            builder.modifyArg("--height", height.get());
+
+            if (!swarmMode.get().equals(SwarmMode.Off)) {
+                builder.modifyArg("--meteor:swarmMode", swarmMode.get().name().toLowerCase(Locale.ROOT));
+                builder.modifyArg("--meteor:swarmIp", swarmIp.get());
+                builder.modifyArg("--meteor:swarmPort", swarmPort.get());
             }
+
+            if (deactivate.checked && !builder.hasArg("--meteor:deactivate")) builder.addArg("--meteor:deactivate");
+
+            builder.jvmOpts = modifyJvmOpts(builder.jvmOpts);
+
+            builder.start();
 
             launch.minWidth = 0;
             launch.set("Launch");
@@ -137,30 +143,12 @@ public class MultiInstanceScreen extends WindowScreen {
         });
     }
 
-    private void launch() throws IOException {
-        ProcessBuilder pb = new ProcessBuilder();
-        pb.inheritIO(); //Redirect stdout
-        pb.environment(); //Copy env vars
+    public String getWidth() {
+        return ArgsUtils.getArgOrElse("--width", () -> String.valueOf(mc.getWindow().getWidth()));
+    }
 
-        String[] args = getLaunchArguments();
-        List<String> newJvmOpts = modifyJvmOpts();
-
-        List<String> argsList = pb.command();
-        argsList.add(jre.get());
-        argsList.addAll(newJvmOpts);
-        argsList.add("-cp");
-        argsList.add(System.getProperty("java.class.path"));
-        argsList.add(FabricLoader.getInstance().isDevelopmentEnvironment() ? "net.fabricmc.devlaunchinjector.Main" : KnotClient.class.getName());
-        argsList.addAll(Arrays.asList(args));
-        argsList.addAll(List.of(launchArgs.get().split(" ")));
-
-        MultiInstance.LOG.info("Starting new instance...");
-        MultiInstance.LOG.info("JRE/JDK: " + jre.get());
-        MultiInstance.LOG.info("JVM Options: " + String.join(" ", newJvmOpts));
-
-        Process p = pb.start();
-
-        MultiInstance.LOG.info("Instance started with PID {}.", p.pid());
+    public String getHeight() {
+        return ArgsUtils.getArgOrElse("--height", () -> String.valueOf(mc.getWindow().getHeight()));
     }
 
     private boolean isHidden(String opt) {
@@ -169,19 +157,19 @@ public class MultiInstanceScreen extends WindowScreen {
 
     private String parseJvmOpts() {
         StringBuilder sb = new StringBuilder();
-        for (var str : JVM_OPTS) if (!isHidden(str) && !str.startsWith("-Xms") && !str.startsWith("-Xmx")) sb.append(str).append(" ");
+        for (var str : builder.jvmOpts) if (!isHidden(str) && !str.startsWith("-Xms") && !str.startsWith("-Xmx")) sb.append(str).append(" ");
         return sb.toString().trim();
     }
 
     private String parseXms() {
-        for (var token : JVM_OPTS) {
+        for (var token : builder.jvmOpts) {
             if (token.startsWith("-Xms")) return token.substring(4);
         }
         return "2048m";
     }
 
     private String parseXmx() {
-        for (var token : JVM_OPTS) {
+        for (var token : builder.jvmOpts) {
             if (token.startsWith("-Xmx")) return token.substring(4);
         }
         return "2048m";
@@ -195,58 +183,14 @@ public class MultiInstanceScreen extends WindowScreen {
         return ((ISwarm) Modules.get().get(Swarm.class)).getServerPort().toString();
     }
 
-    private String getWidth() {
-        return ArgsUtils.getArgOrElse("--width", () -> String.valueOf(mc.getWindow().getWidth()));
-    }
-
-    private String getHeight() {
-        return ArgsUtils.getArgOrElse("--height", () -> String.valueOf(mc.getWindow().getHeight()));
-    }
-
-    private List<String> modifyJvmOpts() {
+    private List<String> modifyJvmOpts(List<String> baseOpts) {
         List<String> newOpts = new ArrayList<>();
 
-        for (var entry : JVM_OPTS) if (isHidden(entry)) newOpts.add(entry);
+        for (var entry : baseOpts) if (isHidden(entry)) newOpts.add(entry);
         newOpts.addAll(Arrays.asList(jvmOpts.get().split(" ")));
         newOpts.add("-Xms" + xms.get());
         newOpts.add("-Xmx" + xmx.get());
         return newOpts;
-    }
-
-    private String[] getLaunchArguments() {
-        List<String> args = new ArrayList<>(List.of(ArgsUtils.args));
-
-        modifyArg(args, "--username", account.getUsername());
-        if (account.getCache().uuid != null) modifyArg(args, "--uuid", account.getCache().uuid);
-        if (account instanceof MicrosoftAccount msacc) modifyArg(args, "--accessToken", ((IMicrosoftAccount) msacc).invokeAuth());
-
-        modifyArg(args, "--width", width.get());
-        modifyArg(args, "--height", height.get());
-
-        String swarmModeStr = swarmMode.get().name().toLowerCase(Locale.ROOT);
-        if (!swarmModeStr.equals("off")) {
-            modifyArg(args, "--meteor:swarmMode", swarmModeStr);
-            modifyArg(args, "--meteor:swarmIp", swarmIp.get());
-            modifyArg(args, "--meteor:swarmPort", swarmPort.get());
-        }
-
-        if (deactivate.checked) args.add("--meteor:deactivate");
-
-        return args.toArray(new String[0]);
-    }
-
-    private void modifyArg(List<String> list, String token, String replace) {
-        int idx = list.indexOf(token);
-        if (idx != -1) {
-            list.set(idx + 1, replace);
-        } else {
-            list.add(token);
-            list.add(replace);
-        }
-    }
-
-    private String getJre() {
-        return Path.of(System.getProperty("java.home"), "bin", "javaw.exe").toString();
     }
 
     private WTextBox option(WContainer root, String label) {

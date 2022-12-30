@@ -1,13 +1,15 @@
 package io.github.racoondog.multiinstance.utils;
 
-import net.fabricmc.loader.api.FabricLoader;
+import io.github.racoondog.multiinstance.MultiInstance;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.function.Supplier;
 
-public class ArgsUtils {
-    public static final String[] args = FabricLoader.getInstance().getLaunchArguments(true);
-
+@Environment(EnvType.CLIENT)
+public final class ArgsUtils {
     public static int indexOf(Object[] data, Object o) {
         return indexOf(data, o, 0, data.length);
     }
@@ -32,12 +34,22 @@ public class ArgsUtils {
     }
 
     public static String getArgOrElse(String argName, Supplier<String> supplier) {
-        int argIdx = indexOf(args, argName);
-        return argIdx == -1 || argIdx >= args.length ? supplier.get() : args[argIdx + 1];
+        int argIdx = indexOf(MultiInstance.LAUNCH_ARGS, argName);
+        return argIdx == -1 || argIdx >= MultiInstance.LAUNCH_ARGS.length ? supplier.get() : MultiInstance.LAUNCH_ARGS[argIdx + 1];
     }
 
     public static boolean hasArg(String argName) {
-        int argIdx = indexOf(args, argName);
+        int argIdx = indexOf(MultiInstance.LAUNCH_ARGS, argName);
         return argIdx != -1;
+    }
+
+    public static void modifyArg(List<String> list, String token, String replace) {
+        int idx = list.indexOf(token);
+        if (idx != -1) {
+            list.set(idx + 1, replace);
+        } else {
+            list.add(token);
+            list.add(replace);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package io.github.racoondog.multiinstance;
 
 import com.mojang.logging.LogUtils;
+import io.github.racoondog.multiinstance.systems.QuickLaunchCommand;
 import io.github.racoondog.multiinstance.utils.ArgsUtils;
 import io.github.racoondog.multiinstance.utils.SwarmUtils;
 import meteordevelopment.meteorclient.addons.GithubRepo;
@@ -10,17 +11,22 @@ import meteordevelopment.meteorclient.systems.hud.Hud;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.PostInit;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.screen.ConnectScreen;
 import net.minecraft.client.network.ServerAddress;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.List;
 
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 
 public class MultiInstance extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
+    public static final String[] LAUNCH_ARGS = FabricLoader.getInstance().getLaunchArguments(true);
+    public static final List<String> JVM_OPTS = ManagementFactory.getRuntimeMXBean().getInputArguments();
 
     @Override
     public void onInitialize() {

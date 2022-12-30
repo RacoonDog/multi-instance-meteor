@@ -3,8 +3,6 @@
   "package": "io.github.racoondog.multiinstance.mixin",
   "compatibilityLevel": "JAVA_17",
   "client": [
-    "IMicrosoftAccount",
-    "SwarmAccessor",
     "WAccountMixin"
   ],
   "injectors": {
