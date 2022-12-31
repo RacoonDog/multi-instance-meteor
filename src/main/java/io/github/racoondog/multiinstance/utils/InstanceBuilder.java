@@ -21,7 +21,7 @@ import static io.github.racoondog.multiinstance.MultiInstance.LOG;
 public final class InstanceBuilder {
     private final ProcessBuilder processBuilder = new ProcessBuilder();
     private final List<String> command = processBuilder.command();
-    private final Account<?> account;
+    private final @Nullable Account<?> account;
 
     public boolean verbose = true;
 
@@ -29,7 +29,7 @@ public final class InstanceBuilder {
     public List<String> jvmOpts = new ArrayList<>(MultiInstance.JVM_OPTS);
     public List<String> launchArgs = new ArrayList<>(List.of(MultiInstance.LAUNCH_ARGS));
 
-    public InstanceBuilder(Account<?> account) {
+    public InstanceBuilder(@Nullable Account<?> account) {
         this.account = account;
     }
 
@@ -65,9 +65,11 @@ public final class InstanceBuilder {
         command.add(FabricLoader.getInstance().isDevelopmentEnvironment() ? "net.fabricmc.devlaunchinjector.Main" : KnotClient.class.getName());
 
         //Add account auth info to launch arguments
-        ArgsUtils.modifyArg(launchArgs, "--username", account.getUsername());
-        if (account.getCache().uuid != null) ArgsUtils.modifyArg(launchArgs, "--uuid", account.getCache().uuid);
-        if (account instanceof MicrosoftAccount msacc) ArgsUtils.modifyArg(launchArgs, "--accessToken", ((IMicrosoftAccount) msacc).invokeAuth());
+        if (account != null) {
+            ArgsUtils.modifyArg(launchArgs, "--username", account.getUsername());
+            if (account.getCache().uuid != null) ArgsUtils.modifyArg(launchArgs, "--uuid", account.getCache().uuid);
+            if (account instanceof MicrosoftAccount msacc) ArgsUtils.modifyArg(launchArgs, "--accessToken", ((IMicrosoftAccount) msacc).invokeAuth());
+        }
 
         //Append launch arguments
         command.addAll(launchArgs);
@@ -78,9 +80,6 @@ public final class InstanceBuilder {
                 LOG.info("JRE/JDK: " + jre);
                 LOG.info("JVM Options: " + String.join(" ", jvmOpts));
             }
-
-            LOG.info("\n\n\nFull Command: " + String.join(" ", command));
-            LOG.info("\n\n\n");
 
             Process process = processBuilder.start();
 

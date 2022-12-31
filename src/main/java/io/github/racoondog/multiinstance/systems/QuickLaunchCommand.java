@@ -9,8 +9,11 @@ import meteordevelopment.meteorclient.systems.commands.Command;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.RunArgs;
+import net.minecraft.client.network.ServerInfo;
 import net.minecraft.command.CommandSource;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 @Environment(EnvType.CLIENT)
@@ -33,6 +36,9 @@ public class QuickLaunchCommand extends Command {
             InstanceBuilder builder = new InstanceBuilder(AccountUtil.getSelectedAccount());
 
             if (join) {
+                InetAddress address = ((InetSocketAddress) mc.getNetworkHandler().getConnection().getAddress()).getAddress();
+                System.out.println(address.getHostAddress());
+
                 if (!builder.hasArg("--meteor:joinServer")) builder.addArg("--meteor:joinServer");
                 builder.modifyArg("--meteor:serverIp", ((InetSocketAddress) mc.getNetworkHandler().getConnection().getAddress()).getAddress().getHostAddress());
             }
@@ -49,10 +55,7 @@ public class QuickLaunchCommand extends Command {
         MeteorExecutor.execute(() -> {
             InstanceBuilder builder = new InstanceBuilder(AccountArgumentType.get(ctx));
 
-            if (join) {
-                if (!builder.hasArg("--meteor:joinServer")) builder.addArg("--meteor:joinServer");
-                builder.modifyArg("--meteor:serverIp", ((InetSocketAddress) mc.getNetworkHandler().getConnection().getAddress()).getAddress().getHostAddress());
-            }
+            if (join) configureJoin(builder);
 
             builder.start();
         });
@@ -60,5 +63,24 @@ public class QuickLaunchCommand extends Command {
         info("Starting instance...");
 
         return 1;
+    }
+
+    private void configureJoin(InstanceBuilder builder) {
+        if (mc.isIntegratedServerRunning()) {
+            warning("Cannot join singeplayer world.");
+            return;
+        }
+
+        ServerInfo serverInfo = mc.getCurrentServerEntry();
+
+        if (serverInfo == null) {
+            warning("Could not obtain server information.");
+            return;
+        }
+
+        String[] address = serverInfo.address.split(":");
+
+        builder.modifyArg("--server", address[0])
+            .modifyArg("--port", address.length > 1 ? address[1] : "25565");
     }
 }

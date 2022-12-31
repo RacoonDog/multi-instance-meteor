@@ -14,5 +14,3 @@ CLI Args:
 - `--meteor:swarmPort`: int
 - `--meteor:swarmIp`: String, only if `worker`
 - `--meteor:deactivate`: Runs `toggle all off` on startup
-- `--meteor:joinServer`: Join server immediately after launching
-- `--meteor:serverIp`: String, only if `joinServer`

@@ -12,16 +12,12 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.PostInit;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.gui.screen.ConnectScreen;
-import net.minecraft.client.network.ServerAddress;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
-
-import static meteordevelopment.meteorclient.MeteorClient.mc;
 
 public class MultiInstance extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
@@ -53,11 +49,6 @@ public class MultiInstance extends MeteorAddon {
                 SwarmUtils.configIp(swarmIp);
                 SwarmUtils.beginWorker();
             } else if (swarmMode.equals("host")) SwarmUtils.beginHost();
-        }
-
-        if (ArgsUtils.hasArg("--meteor:joinServer")) {
-            String ip = ArgsUtils.getArg("--meteor:serverIp");
-            ConnectScreen.connect(mc.currentScreen, mc, ServerAddress.parse(ip), null);
         }
     }
 
