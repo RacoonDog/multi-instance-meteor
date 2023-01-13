@@ -5,21 +5,29 @@ import com.mojang.brigadier.context.CommandContext;
 import io.github.racoondog.meteorsharedaddonutils.features.arguments.AccountArgumentType;
 import io.github.racoondog.multiinstance.utils.AccountUtil;
 import io.github.racoondog.multiinstance.utils.InstanceBuilder;
+import meteordevelopment.meteorclient.MeteorClient;
+import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
+import meteordevelopment.meteorclient.systems.accounts.Account;
 import meteordevelopment.meteorclient.systems.commands.Command;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
+import meteordevelopment.orbit.EventHandler;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.RunArgs;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.command.CommandSource;
+import org.apache.commons.lang3.time.StopWatch;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 @Environment(EnvType.CLIENT)
 public class QuickLaunchCommand extends Command {
+    private String username = null;
+    private StopWatch stopWatch = null;
+
     public QuickLaunchCommand() {
-        super("quick-launch", "Quickly launch another instance of Minecraft with the specified configurations.");
+        super("quick-launch", "Quickly launch another instance of Minecraft with the specified configurations.", "ql");
+
+        MeteorClient.EVENT_BUS.subscribe(this);
     }
 
     @Override
@@ -29,19 +37,40 @@ public class QuickLaunchCommand extends Command {
 
         builder.then(argument("account", AccountArgumentType.create()).executes(ctx -> executeAccount(ctx, false))
             .then(literal("-join").executes(ctx -> executeAccount(ctx, true))));
+
+        builder.then(argument("account", AccountArgumentType.create())
+            .then(literal("-join").then(literal("-timer")
+                .executes(ctx -> {
+                    Account<?> account = AccountArgumentType.get(ctx);
+
+                    MeteorExecutor.execute(() -> {
+                        InstanceBuilder builder1 = new InstanceBuilder(account);
+                        configureJoin(builder1);
+                        builder1.start();
+                    });
+
+                    username = account.getUsername();
+                    stopWatch = StopWatch.createStarted();
+
+                    return 1;
+                }))));
+    }
+
+    @EventHandler
+    private void onMessageReceive(ReceiveMessageEvent event) {
+        if (stopWatch == null) return;
+        if (event.getMessage().getString().equals(username + " joined")) {
+            stopWatch.stop();
+
+            info("Took %s seconds.", stopWatch.getTime(TimeUnit.MILLISECONDS));
+        }
     }
 
     private int execute(CommandContext<CommandSource> ctx, boolean join) {
         MeteorExecutor.execute(() -> {
             InstanceBuilder builder = new InstanceBuilder(AccountUtil.getSelectedAccount());
 
-            if (join) {
-                InetAddress address = ((InetSocketAddress) mc.getNetworkHandler().getConnection().getAddress()).getAddress();
-                System.out.println(address.getHostAddress());
-
-                if (!builder.hasArg("--meteor:joinServer")) builder.addArg("--meteor:joinServer");
-                builder.modifyArg("--meteor:serverIp", ((InetSocketAddress) mc.getNetworkHandler().getConnection().getAddress()).getAddress().getHostAddress());
-            }
+            if (join) configureJoin(builder);
 
             builder.start();
         });

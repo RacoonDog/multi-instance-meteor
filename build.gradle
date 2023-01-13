@@ -21,6 +21,10 @@ repositories {
         name = "msau-repsy"
         url = "https://repo.repsy.io/mvn/ggcrosby/meteorsharedaddonutils"
     }
+    maven {
+        name = "launch-args-api-repsy"
+        url = "https://repo.repsy.io/mvn/ggcrosby/launchargsapi"
+    }
 }
 
 dependencies {
@@ -29,12 +33,19 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "meteordevelopment:meteor-client:${project.meteor_version}"
+    modImplementation(include(fabricApi.module("fabric-api-base", project.fabric_version)))
 
     // Libraries
     modImplementation("io.github.racoondog:MeteorSharedAddonUtils:${project.msau_version}") {
         transitive = false
     }
     include("io.github.racoondog:MeteorSharedAddonUtils:${project.msau_version}") {
+        transitive = false
+    }
+    modImplementation("io.github.racoondog:LaunchArgsAPI:1.1.0") {
+        transitive = false
+    }
+    include("io.github.racoondog:LaunchArgsAPI:1.1.0") {
         transitive = false
     }
 }

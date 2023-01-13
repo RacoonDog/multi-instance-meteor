@@ -16,6 +16,7 @@
     "sources": "https://github.com/RacoonDog/multi-instance-meteor",
     "issues": "https://github.com/RacoonDog/multi-instance-meteor/issues"
   },
+  "license": "ARR",
   "icon": "assets/multi-instance/icon.png",
   "environment": "client",
   "entrypoints": {
